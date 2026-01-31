@@ -5,12 +5,15 @@ import Topbar from "./Topbar";
 export default function AppLayout() {
   return (
     <div className="min-h-screen bg-[#0B1220] text-white">
-      <div className="mx-auto flex max-w-[1400px] gap-6 px-4 py-5">
+      <div className="flex min-h-screen">
         <Sidebar />
+
         <main className="flex-1">
-          <Topbar />
-          <div className="mt-6">
-            <Outlet />
+          <div className="mx-auto max-w-[1400px] px-4 py-5">
+            <Topbar />
+            <div className="mt-6">
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>

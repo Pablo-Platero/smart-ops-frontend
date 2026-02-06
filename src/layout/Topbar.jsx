@@ -21,18 +21,23 @@ function breadcrumb(pathname) {
 export default function Topbar() {
   const { pathname } = useLocation();
   const title = TITLE_MAP[pathname] ?? "Panel";
-  const { toggleSidebar } = useUI();
+  const { toggleSidebar, toggleMobileSidebar } = useUI();
+
 
   return (
     <header className="flex items-center justify-between gap-4">
       <div className="flex items-start gap-3">
-        <button
-          onClick={toggleSidebar}
-          className="mt-1 rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10"
-          title="Toggle sidebar"
-        >
-          <PanelLeft size={18} className="text-white/80" />
-        </button>
+     <button
+  onClick={() => {
+    if (window.innerWidth < 1024) toggleMobileSidebar(); // mobile/tablet
+    else toggleSidebar(); // desktop
+  }}
+  className="mt-1 rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10"
+  title="Toggle sidebar"
+>
+  <PanelLeft size={18} className="text-white/80" />
+</button>
+
 
         <div>
           <div className="text-xs uppercase tracking-widest text-white/50">

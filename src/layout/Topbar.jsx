@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, PanelLeft } from "lucide-react";
+import { useUI } from "../app/uiState";
 
 const TITLE_MAP = {
   "/dashboard": "Visión general",
@@ -20,14 +21,25 @@ function breadcrumb(pathname) {
 export default function Topbar() {
   const { pathname } = useLocation();
   const title = TITLE_MAP[pathname] ?? "Panel";
+  const { toggleSidebar } = useUI();
 
   return (
     <header className="flex items-center justify-between gap-4">
-      <div>
-        <div className="text-xs uppercase tracking-widest text-white/50">
-          {breadcrumb(pathname)}
+      <div className="flex items-start gap-3">
+        <button
+          onClick={toggleSidebar}
+          className="mt-1 rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10"
+          title="Toggle sidebar"
+        >
+          <PanelLeft size={18} className="text-white/80" />
+        </button>
+
+        <div>
+          <div className="text-xs uppercase tracking-widest text-white/50">
+            {breadcrumb(pathname)}
+          </div>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{title}</h1>
         </div>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">{title}</h1>
       </div>
 
       <div className="flex items-center gap-3">

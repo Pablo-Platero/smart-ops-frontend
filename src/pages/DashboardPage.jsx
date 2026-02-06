@@ -41,7 +41,7 @@ export default function DashboardPage() {
 
           <div className="mt-4 h-[260px] rounded-xl border border-white/10 bg-black/20">
             <div className="flex h-full items-center justify-center text-sm text-white/50">
-              Gráfica (placeholder)
+              Gráfica
             </div>
           </div>
         </Card>

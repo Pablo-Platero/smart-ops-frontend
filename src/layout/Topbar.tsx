@@ -8,8 +8,6 @@ const TITLE_MAP = {
   "/finance": "Finanzas",
   "/hr": "Recursos Humanos",
   "/crm": "CRM",
-  "/projects": "Gestión de proyectos",
-  "/leads": "Generación de LEADS",
   "/operations": "Producción y operaciones",
 };
 

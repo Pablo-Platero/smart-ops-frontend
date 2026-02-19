@@ -6,8 +6,6 @@ import InventoriesPage from "../pages/InventoriesPage";
 import FinancePage from "../pages/FinancePage";
 import HRPage from "../pages/HRPage";
 import CRMPage from "../pages/CRMPage";
-import ProjectsPage from "../pages/ProjectsPage";
-import LeadsPage from "../pages/LeadsPage";
 import OperationsPage from "../pages/OperationsPage";
 
 export const router = createBrowserRouter([
@@ -20,8 +18,6 @@ export const router = createBrowserRouter([
       { path: "/finance", element: <FinancePage /> },
       { path: "/hr", element: <HRPage /> },
       { path: "/crm", element: <CRMPage /> },
-      { path: "/projects", element: <ProjectsPage /> },
-      { path: "/leads", element: <LeadsPage /> },
       { path: "/operations", element: <OperationsPage /> },
     ],
   },

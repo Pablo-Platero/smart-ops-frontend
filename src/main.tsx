@@ -4,7 +4,7 @@ import App from "./app/App";
 import "./index.css";
 import { UIProvider } from "./app/uiState";
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <UIProvider>
       <App />

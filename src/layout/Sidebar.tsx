@@ -23,8 +23,6 @@ const sections = [
       { to: "/finance", label: "Finanzas", icon: BadgeDollarSign },
       { to: "/hr", label: "RRHH", icon: Users },
       { to: "/crm", label: "CRM", icon: Contact },
-      { to: "/projects", label: "Gestión de proyectos", icon: KanbanSquare },
-      { to: "/leads", label: "Generación de LEADS", icon: Megaphone },
     ],
   },
   {

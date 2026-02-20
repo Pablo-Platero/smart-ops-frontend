@@ -1,12 +1,27 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 
-const UIContext = createContext(null);
+type UIContextValue = {
+  isSidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+  setSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 
-export function UIProvider({ children }) {
+  isMobileSidebarOpen: boolean;
+  openMobileSidebar: () => void;
+  closeMobileSidebar: () => void;
+  toggleMobileSidebar: () => void;
+};
+
+const UIContext = createContext<UIContextValue | undefined>(undefined);
+
+type UIProviderProps = {
+  children: React.ReactNode;
+};
+
+export function UIProvider({ children }: UIProviderProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  const value = useMemo(
+  const value = useMemo<UIContextValue>(
     () => ({
       isSidebarCollapsed,
       toggleSidebar: () => setIsSidebarCollapsed((v) => !v),

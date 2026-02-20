@@ -1,4 +1,11 @@
-export default function Tooltip({ label, children }) {
+import React from "react";
+
+type TooltipProps = {
+  label: string;
+  children: React.ReactNode;
+};
+
+export default function Tooltip({ label, children }: TooltipProps) {
   return (
     <div className="group relative flex justify-center">
       {children}

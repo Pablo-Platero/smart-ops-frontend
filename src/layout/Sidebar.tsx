@@ -1,3 +1,4 @@
+import React from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -5,13 +6,23 @@ import {
   BadgeDollarSign,
   Users,
   Contact,
-  KanbanSquare,
-  Megaphone,
   Factory,
+  type LucideIcon,
 } from "lucide-react";
 import { useUI } from "../app/uiState";
 
-const sections = [
+type MenuLink = {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+type Section = {
+  title: string;
+  items: MenuLink[];
+};
+
+const sections: Section[] = [
   {
     title: "PRINCIPAL",
     items: [{ to: "/dashboard", label: "Dashboards", icon: LayoutDashboard }],
@@ -31,7 +42,12 @@ const sections = [
   },
 ];
 
-function MenuItem({ to, label, icon: Icon, collapsed, onNavigate }) {
+type MenuItemProps = MenuLink & {
+  collapsed: boolean;
+  onNavigate?: () => void;
+};
+
+function MenuItem({ to, label, icon: Icon, collapsed, onNavigate }: MenuItemProps) {
   return (
     <NavLink
       to={to}
@@ -54,7 +70,12 @@ function MenuItem({ to, label, icon: Icon, collapsed, onNavigate }) {
   );
 }
 
-function SidebarContent({ collapsed, onNavigate }) {
+type SidebarContentProps = {
+  collapsed: boolean;
+  onNavigate?: () => void;
+};
+
+function SidebarContent({ collapsed, onNavigate }: SidebarContentProps) {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Brand */}
@@ -62,11 +83,7 @@ function SidebarContent({ collapsed, onNavigate }) {
         <div className="text-xs uppercase tracking-widest text-white/50">
           {collapsed ? "SO" : "Smart Ops"}
         </div>
-        {!collapsed && (
-          <div className="mt-1 text-xl font-semibold tracking-tight">
-            Control Center
-          </div>
-        )}
+        {!collapsed && <div className="mt-1 text-xl font-semibold tracking-tight">logo</div>}
         <div className="mt-4 h-px w-full bg-white/10" />
       </div>
 
@@ -79,13 +96,14 @@ function SidebarContent({ collapsed, onNavigate }) {
                 {sec.title}
               </div>
             )}
+
             <div className="space-y-1">
               {sec.items.map((it) => (
                 <MenuItem
                   key={it.to}
+                  {...it}
                   collapsed={collapsed}
                   onNavigate={onNavigate}
-                  {...it}
                 />
               ))}
             </div>
@@ -146,10 +164,7 @@ export default function Sidebar() {
 
       {/* Mobile */}
       <div className={`lg:hidden ${isMobileSidebarOpen ? "block" : "hidden"}`}>
-        <div
-          onClick={closeMobileSidebar}
-          className="fixed inset-0 z-40 bg-black/60"
-        />
+        <div onClick={closeMobileSidebar} className="fixed inset-0 z-40 bg-black/60" />
         <aside className="fixed left-0 top-0 z-50 h-full w-[290px] border-r border-white/10 bg-[#0A111E]">
           <SidebarContent collapsed={false} onNavigate={closeMobileSidebar} />
         </aside>

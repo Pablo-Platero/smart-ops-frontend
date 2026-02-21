@@ -1,45 +1,83 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Card from "../components/ui/Card";
 
-type CRMType = "Empresa" | "Persona";
-type CRMStatus = "Activo" | "Prospecto" | "Inactivo";
+type CrmType = "Empresa" | "Persona";
+type CrmStatus = "Activo" | "Prospecto" | "Inactivo";
 
-type CRMRecord = {
+type CrmRecord = {
   id: string;
-  type: CRMType;
+  type: CrmType;
   name: string;
   owner: string;
-  status: CRMStatus;
+  status: CrmStatus;
   email: string;
   phone: string;
-  // listo para pipeline sin implementarlo ahora:
-  stage?: "Nuevo" | "Contactado" | "Negociación" | "Cerrado";
 };
 
-const TYPES: Array<"Todos" | CRMType> = ["Todos", "Empresa", "Persona"];
-const STATUS: Array<"Todos" | CRMStatus> = ["Todos", "Activo", "Prospecto", "Inactivo"];
+const TYPES: Array<"Todos" | CrmType> = ["Todos", "Empresa", "Persona"];
+const STATUS: Array<"Todos" | CrmStatus> = ["Todos", "Activo", "Prospecto", "Inactivo"];
 
-const RECORDS: CRMRecord[] = [
-  { id: "CRM-001", type: "Empresa", name: "TechCorp", owner: "Ventas", status: "Activo", email: "contact@techcorp.com", phone: "+506 8888-1111", stage: "Negociación" },
-  { id: "CRM-002", type: "Empresa", name: "Municipalidad de Upala", owner: "Ventas", status: "Prospecto", email: "info@upala.go.cr", phone: "+506 2460-0000", stage: "Nuevo" },
-  { id: "CRM-003", type: "Persona", name: "María López", owner: "CRM", status: "Activo", email: "maria.lopez@email.com", phone: "+506 8888-2222", stage: "Contactado" },
-  { id: "CRM-004", type: "Persona", name: "Carlos Gómez", owner: "CRM", status: "Inactivo", email: "carlos.g@email.com", phone: "+506 8888-3333" },
-  { id: "CRM-005", type: "Empresa", name: "Constructora Norte", owner: "Ventas", status: "Activo", email: "ventas@constructora.com", phone: "+506 8888-4444", stage: "Cerrado" },
-  { id: "CRM-006", type: "Empresa", name: "Servicios del Pacífico", owner: "Operaciones", status: "Prospecto", email: "hello@pacifico.com", phone: "+506 8888-5555", stage: "Nuevo" },
+const RECORDS: CrmRecord[] = [
+  {
+    id: "CRM-001",
+    type: "Empresa",
+    name: "TechCorp",
+    owner: "Ventas",
+    status: "Activo",
+    email: "contact@techcorp.com",
+    phone: "+506 8888-1111",
+  },
+  {
+    id: "CRM-002",
+    type: "Empresa",
+    name: "Municipalidad de Upala",
+    owner: "Ventas",
+    status: "Prospecto",
+    email: "info@upala.go.cr",
+    phone: "+506 2460-0000",
+  },
+  {
+    id: "CRM-003",
+    type: "Persona",
+    name: "María López",
+    owner: "CRM",
+    status: "Activo",
+    email: "maria.lopez@email.com",
+    phone: "+506 8888-2222",
+  },
+  {
+    id: "CRM-004",
+    type: "Persona",
+    name: "Carlos Gómez",
+    owner: "CRM",
+    status: "Inactivo",
+    email: "carlos.g@email.com",
+    phone: "+506 8888-3333",
+  },
+  {
+    id: "CRM-005",
+    type: "Empresa",
+    name: "Constructora Norte",
+    owner: "Ventas",
+    status: "Activo",
+    email: "ventas@constructora.com",
+    phone: "+506 8888-4444",
+  },
+  {
+    id: "CRM-006",
+    type: "Empresa",
+    name: "Servicios del Pacífico",
+    owner: "Operaciones",
+    status: "Prospecto",
+    email: "hello@pacifico.com",
+    phone: "+506 8888-5555",
+  },
 ];
 
-function badgeClass(status: CRMStatus) {
-  if (status === "Activo") return "bg-green-500/15 text-green-300 border-green-500/20";
-  if (status === "Prospecto") return "bg-blue-500/15 text-blue-300 border-blue-500/20";
-  return "bg-gray-500/15 text-gray-300 border-gray-500/20";
-}
-
-function stageClass(stage?: CRMRecord["stage"]) {
-  if (!stage) return "bg-white/5 text-white/60 border-white/10";
-  if (stage === "Cerrado") return "bg-green-500/10 text-green-300 border-green-500/20";
-  if (stage === "Negociación") return "bg-yellow-500/10 text-yellow-300 border-yellow-500/20";
-  if (stage === "Contactado") return "bg-blue-500/10 text-blue-300 border-blue-500/20";
-  return "bg-white/5 text-white/60 border-white/10";
+function badgeClass(status: CrmStatus) {
+  if (status === "Activo") return "badge badge-success";
+  if (status === "Prospecto") return "badge badge-info";
+  return "badge border-white/10 bg-white/5 text-white/70";
 }
 
 function Stat({
@@ -48,14 +86,14 @@ function Stat({
   note,
 }: {
   label: string;
-  value: number;
+  value: string | number;
   note: string;
 }) {
   return (
-    <Card className="p-4">
-      <div className="text-sm text-white/60">{label}</div>
+    <Card className="card-pad">
+      <div className="text-sm muted">{label}</div>
       <div className="mt-2 text-2xl font-semibold">{value}</div>
-      <div className="mt-2 text-xs text-white/50">{note}</div>
+      <div className="mt-2 text-xs muted-2">{note}</div>
     </Card>
   );
 }
@@ -66,15 +104,15 @@ export default function CRMPage() {
   const [status, setStatus] = useState<(typeof STATUS)[number]>("Todos");
 
   const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
+    const term = q.trim().toLowerCase();
 
     return RECORDS.filter((r) => {
       const byQ =
-        query.length === 0 ||
-        r.id.toLowerCase().includes(query) ||
-        r.name.toLowerCase().includes(query) ||
-        r.email.toLowerCase().includes(query) ||
-        r.phone.toLowerCase().includes(query);
+        term.length === 0 ||
+        r.id.toLowerCase().includes(term) ||
+        r.name.toLowerCase().includes(term) ||
+        r.email.toLowerCase().includes(term) ||
+        r.phone.toLowerCase().includes(term);
 
       const byType = type === "Todos" || r.type === type;
       const byStatus = status === "Todos" || r.status === status;
@@ -91,31 +129,22 @@ export default function CRMPage() {
     return { total, companies, people, prospects };
   }, [filtered]);
 
-  function handleView(record: CRMRecord) {
-    // MVP: solo ejemplo; después abre modal o navega a /crm/:id
-    alert(`Ver: ${record.name} (${record.id})`);
-  }
-
-  function handleEdit(record: CRMRecord) {
-    alert(`Editar: ${record.name} (${record.id})`);
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="page">
       {/* Filters */}
-      <Card className="p-4">
+      <Card className="card-pad">
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-6">
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar por nombre, email, teléfono o ID…"
-            className="lg:col-span-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm outline-none placeholder:text-white/40"
+            className="input lg:col-span-2"
           />
 
           <select
             value={type}
             onChange={(e) => setType(e.target.value as (typeof TYPES)[number])}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none"
+            className="select"
           >
             {TYPES.map((t) => (
               <option key={t} value={t} className="bg-[#0B1220]">
@@ -127,7 +156,7 @@ export default function CRMPage() {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as (typeof STATUS)[number])}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none"
+            className="select"
           >
             {STATUS.map((s) => (
               <option key={s} value={s} className="bg-[#0B1220]">
@@ -136,17 +165,13 @@ export default function CRMPage() {
             ))}
           </select>
 
-          <button className="rounded-xl bg-white/10 px-4 py-2 text-sm hover:bg-white/15">
+          <button type="button" className="btn btn-primary">
             + Nuevo registro
           </button>
 
-          <button className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm hover:bg-white/10">
+          <button type="button" className="btn btn-ghost">
             Exportar
           </button>
-        </div>
-
-        <div className="mt-3 text-xs text-white/50">
-          Tip: el pipeline y scoring se integra después; por ahora mantenemos filtros + tabla limpia.
         </div>
       </Card>
 
@@ -160,74 +185,51 @@ export default function CRMPage() {
 
       {/* Table */}
       <Card className="p-0 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="card-header">
           <div>
-            <div className="text-sm text-white/60">CRM</div>
+            <div className="text-sm muted">CRM</div>
             <div className="text-lg font-semibold">Cuentas y contactos</div>
-          </div>
-
-          <div className="text-xs text-white/50">
-            Mostrando {filtered.length} / {RECORDS.length}
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-white/60">
+        <div className="table-wrap">
+          <table className="table">
+            <thead className="table-head">
               <tr className="border-b border-white/10">
-                <th className="px-4 py-3 text-left font-medium">ID</th>
-                <th className="px-4 py-3 text-left font-medium">Tipo</th>
-                <th className="px-4 py-3 text-left font-medium">Nombre</th>
-                <th className="px-4 py-3 text-left font-medium">Owner</th>
-                <th className="px-4 py-3 text-left font-medium">Estado</th>
-                <th className="px-4 py-3 text-left font-medium">Pipeline</th>
-                <th className="px-4 py-3 text-left font-medium">Email</th>
-                <th className="px-4 py-3 text-left font-medium">Teléfono</th>
-                <th className="px-4 py-3 text-right font-medium">Acción</th>
+                <th className="th">ID</th>
+                <th className="th">Tipo</th>
+                <th className="th">Nombre</th>
+                <th className="th">Owner</th>
+                <th className="th">Estado</th>
+                <th className="th">Email</th>
+                <th className="th">Teléfono</th>
+                <th className="th text-right">Acción</th>
               </tr>
             </thead>
 
             <tbody>
               {filtered.map((r) => (
-                <tr key={r.id} className="border-b border-white/10 hover:bg-white/5">
-                  <td className="px-4 py-3 text-white/90">{r.id}</td>
-                  <td className="px-4 py-3 text-white/80">{r.type}</td>
-                  <td className="px-4 py-3 text-white/90">{r.name}</td>
-                  <td className="px-4 py-3 text-white/80">{r.owner}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs ${badgeClass(r.status)}`}>
-                      {r.status}
-                    </span>
+                <tr key={r.id} className="tr">
+                  <td className="td-strong">{r.id}</td>
+                  <td className="td">{r.type}</td>
+                  <td className="td-strong">{r.name}</td>
+                  <td className="td">{r.owner}</td>
+                  <td className="td">
+                    <span className={badgeClass(r.status)}>{r.status}</span>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs ${stageClass(r.stage)}`}>
-                      {r.stage ?? "—"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-white/80">{r.email}</td>
-                  <td className="px-4 py-3 text-white/80">{r.phone}</td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => handleView(r)}
-                        className="rounded-lg border border-white/10 px-3 py-1 text-xs hover:bg-white/10"
-                      >
-                        Ver
-                      </button>
-                      <button
-                        onClick={() => handleEdit(r)}
-                        className="rounded-lg bg-white/10 px-3 py-1 text-xs hover:bg-white/15"
-                      >
-                        Editar
-                      </button>
-                    </div>
+                  <td className="td">{r.email}</td>
+                  <td className="td">{r.phone}</td>
+                  <td className="td text-right">
+                    <button type="button" className="btn btn-ghost px-3 py-1 text-xs">
+                      Ver
+                    </button>
                   </td>
                 </tr>
               ))}
 
               {filtered.length === 0 && (
                 <tr>
-                  <td className="px-4 py-10 text-center text-white/50" colSpan={9}>
+                  <td className="px-4 py-10 text-center text-white/50" colSpan={8}>
                     No hay registros con esos filtros
                   </td>
                 </tr>
@@ -239,3 +241,43 @@ export default function CRMPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+{/* 
+
+Implementé el módulo de CRM para gestionar cuentas (empresas) y contactos (personas) desde una vista centralizada.  
+La pantalla permite filtrar, buscar y revisar registros de forma rápida, manteniendo una UI consistente con el resto del ERP.
+
+ Qué incluye
+- Búsqueda global por ID, nombre, email o teléfono.
+- Filtros por tipo (Empresa/Persona) y estado (Activo/Prospecto/Inactivo).
+- KPIs que se recalculan en base a los filtros aplicados.
+- Tabla con listado de registros y acción “Ver”.
+
+Estructura del código
+- `CRMPage.tsx`
+  - Contiene la lógica de filtros/búsqueda con `useMemo` para optimizar el rendimiento.
+  - Calcula KPIs desde la lista filtrada para mantener consistencia.
+  - Renderiza tabla y badges de estado.
+
+  Estilos
+Se usan clases reutilizables definidas en `src/index.css` (`@layer components`) para mantener orden:
+- `page`, `card`, `card-pad`, `card-header`
+- `input`, `select`
+- `btn`, `btn-primary`, `btn-ghost`
+- `table`, `th`, `td`, `tr`
+- `badge` (y variantes)
+
+### Integración con backend
+El módulo está listo para reemplazar el arreglo mock por datos reales.  
+La integración recomendada es un endpoint tipo:
+
+- `GET /crm/records?query=&type=&status=`
+
+El frontend puede mapear la respuesta a la tabla sin cambiar el layout.*/}

@@ -1,41 +1,45 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Card from "../components/ui/Card";
-import { useForm, type Resolver, type SubmitHandler } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 
-type Status = "En curso" | "Pendiente" | "Bloqueado" | "Resuelto";
 type Priority = "Alta" | "Media" | "Baja";
-type Type = "Orden" | "Ticket";
+type OrderStatus = "En curso" | "Pendiente" | "Bloqueado" | "Resuelto";
+type OrderType = "Orden" | "Ticket";
+
+type Task = {
+  id: number;
+  title: string;
+  area: string;
+  done: boolean;
+};
 
 type Order = {
   id: string;
-  type: Type;
+  type: OrderType;
   line: string;
-  status: Status;
+  status: OrderStatus;
   eta: string;
   priority: Priority;
 };
 
-const SEED_ORDERS: Order[] = [
-  { id: "OP-1201", type: "Orden", line: "Línea A", status: "En curso", eta: "2h", priority: "Alta" },
-  { id: "OP-1202", type: "Ticket", line: "Línea B", status: "Pendiente", eta: "6h", priority: "Media" },
-  { id: "OP-1203", type: "Orden", line: "Línea C", status: "Bloqueado", eta: "—", priority: "Alta" },
-  { id: "OP-1204", type: "Ticket", line: "Planta 1", status: "Resuelto", eta: "—", priority: "Baja" },
-];
-
-const TASKS_SEED = [
+const TASKS_SEED: Task[] = [
   { id: 1, title: "Revisión de maquinaria (turno mañana)", area: "Planta 1", done: false },
   { id: 2, title: "Validar stock de materia prima crítica", area: "Bodega Central", done: true },
   { id: 3, title: "Actualizar plan de producción semanal", area: "Operaciones", done: false },
   { id: 4, title: "Inspección de seguridad (EPP)", area: "Planta 2", done: false },
 ];
 
-function badgeClass(status: Status) {
-  if (status === "En curso") return "bg-blue-500/15 text-blue-300 border-blue-500/20";
-  if (status === "Pendiente") return "bg-yellow-500/15 text-yellow-300 border-yellow-500/20";
-  if (status === "Bloqueado") return "bg-red-500/15 text-red-300 border-red-500/20";
-  return "bg-green-500/15 text-green-300 border-green-500/20";
+const ORDERS: Order[] = [
+  { id: "OP-1201", type: "Orden", line: "Línea A", status: "En curso", eta: "2h", priority: "Alta" },
+  { id: "OP-1202", type: "Ticket", line: "Línea B", status: "Pendiente", eta: "6h", priority: "Media" },
+  { id: "OP-1203", type: "Orden", line: "Línea C", status: "Bloqueado", eta: "—", priority: "Alta" },
+  { id: "OP-1204", type: "Ticket", line: "Planta 1", status: "Resuelto", eta: "—", priority: "Baja" },
+];
+
+function badgeClass(status: OrderStatus) {
+  if (status === "En curso") return "badge badge-info";
+  if (status === "Pendiente") return "badge badge-warn";
+  if (status === "Bloqueado") return "badge badge-danger";
+  return "badge badge-success";
 }
 
 function priorityClass(p: Priority) {
@@ -44,149 +48,82 @@ function priorityClass(p: Priority) {
   return "text-white/70";
 }
 
-function Stat({ label, value, note }: { label: string; value: string; note: string }) {
+function Stat({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string | number;
+  note: string;
+}) {
   return (
-    <Card className="p-4">
-      <div className="text-sm text-white/60">{label}</div>
+    <Card className="card-pad">
+      <div className="text-sm muted">{label}</div>
       <div className="mt-2 text-2xl font-semibold">{value}</div>
-      <div className="mt-2 text-xs text-white/50">{note}</div>
+      <div className="mt-2 text-xs muted-2">{note}</div>
     </Card>
   );
 }
 
-function Modal({
-  open,
-  title,
-  children,
-  onClose,
-}: {
-  open: boolean;
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-}) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="absolute left-1/2 top-1/2 w-[92vw] max-w-2xl -translate-x-1/2 -translate-y-1/2">
-        <Card className="p-0 overflow-hidden">
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <div className="text-sm font-semibold">{title}</div>
-            <button onClick={onClose} className="text-xs px-3 py-1 border border-white/10 rounded-lg">
-              Cerrar
-            </button>
-          </div>
-          <div className="p-4">{children}</div>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-const orderSchema = z.object({
-  type: z.enum(["Orden", "Ticket"]),
-  line: z.string().min(2, "Área requerida"),
-  priority: z.enum(["Alta", "Media", "Baja"]),
-  eta: z.string().min(1),
-});
-
-type OrderForm = z.infer<typeof orderSchema>;
-
 export default function OperationsPage() {
-  const [orders, setOrders] = useState<Order[]>(SEED_ORDERS);
-  const [tasks, setTasks] = useState(TASKS_SEED);
-  const [open, setOpen] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>(TASKS_SEED);
 
-  const form = useForm<OrderForm>({
-    resolver: zodResolver(orderSchema) as Resolver<OrderForm>,
-    defaultValues: {
-      type: "Orden",
-      line: "",
-      priority: "Media",
-      eta: "4h",
-    },
-  });
-
-  const kpis = useMemo(() => {
-    const openOrders = orders.filter(o => o.status !== "Resuelto").length;
-    const blocked = orders.filter(o => o.status === "Bloqueado").length;
-    const highPriority = orders.filter(o => o.priority === "Alta").length;
-    const resolved = orders.filter(o => o.status === "Resuelto").length;
-    return { openOrders, blocked, highPriority, resolved };
-  }, [orders]);
-
-  const doneCount = useMemo(() => tasks.filter(t => t.done).length, [tasks]);
+  const doneCount = useMemo(() => tasks.filter((t) => t.done).length, [tasks]);
 
   function toggleTask(id: number) {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
   }
 
-  const onSubmit: SubmitHandler<OrderForm> = (values) => {
-    const newOrder: Order = {
-      id: `OP-${Math.floor(1000 + Math.random() * 9000)}`,
-      type: values.type,
-      line: values.line,
-      status: "Pendiente",
-      eta: values.eta,
-      priority: values.priority,
-    };
-
-    setOrders(prev => [newOrder, ...prev]);
-    setOpen(false);
-  };
-
   return (
-    <div className="space-y-6">
-
-      {/* KPIs dinámicos */}
+    <div className="page">
+      {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Órdenes abiertas" value={`${kpis.openOrders}`} note="Pendientes / En curso" />
-        <Stat label="Bloqueadas" value={`${kpis.blocked}`} note="Requieren acción" />
-        <Stat label="Alta prioridad" value={`${kpis.highPriority}`} note="Atención inmediata" />
-        <Stat label="Resueltas" value={`${kpis.resolved}`} note="Histórico reciente" />
+        <Stat label="Producción hoy" value="1,240 uds" note="Objetivo: 1,500" />
+        <Stat label="Eficiencia" value="82%" note="Últimas 24h" />
+        <Stat label="Órdenes abiertas" value="3" note="En curso / pendientes" />
+        <Stat label="Incidentes" value="1" note="Requiere atención" />
       </div>
 
+      {/* Main grid */}
       <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-
-        {/* Orders */}
+        {/* Orders / Tickets */}
         <Card className="p-0 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <div className="card-header">
             <div>
-              <div className="text-sm text-white/60">Operación</div>
+              <div className="text-sm muted">Operación</div>
               <div className="text-lg font-semibold">Órdenes & Tickets</div>
             </div>
-            <button onClick={() => setOpen(true)} className="rounded-xl bg-white/10 px-4 py-2 text-sm">
+
+            <button type="button" className="btn btn-primary">
               + Crear
             </button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-white/60">
+          <div className="table-wrap">
+            <table className="table">
+              <thead className="table-head">
                 <tr className="border-b border-white/10">
-                  <th className="px-4 py-3 text-left">ID</th>
-                  <th className="px-4 py-3 text-left">Tipo</th>
-                  <th className="px-4 py-3 text-left">Área</th>
-                  <th className="px-4 py-3 text-left">Estado</th>
-                  <th className="px-4 py-3 text-left">ETA</th>
-                  <th className="px-4 py-3 text-right">Prioridad</th>
+                  <th className="th">ID</th>
+                  <th className="th">Tipo</th>
+                  <th className="th">Área</th>
+                  <th className="th">Estado</th>
+                  <th className="th">ETA</th>
+                  <th className="th text-right">Prioridad</th>
                 </tr>
               </thead>
+
               <tbody>
-                {orders.map(o => (
-                  <tr key={o.id} className="border-b border-white/10 hover:bg-white/5">
-                    <td className="px-4 py-3">{o.id}</td>
-                    <td className="px-4 py-3">{o.type}</td>
-                    <td className="px-4 py-3">{o.line}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-3 py-1 text-xs border rounded-full ${badgeClass(o.status)}`}>
-                        {o.status}
-                      </span>
+                {ORDERS.map((o) => (
+                  <tr key={o.id} className="tr">
+                    <td className="td-strong">{o.id}</td>
+                    <td className="td">{o.type}</td>
+                    <td className="td">{o.line}</td>
+                    <td className="td">
+                      <span className={badgeClass(o.status)}>{o.status}</span>
                     </td>
-                    <td className="px-4 py-3">{o.eta}</td>
-                    <td className={`px-4 py-3 text-right font-semibold ${priorityClass(o.priority)}`}>
+                    <td className="td">{o.eta}</td>
+                    <td className={`td text-right font-semibold ${priorityClass(o.priority)}`}>
                       {o.priority}
                     </td>
                   </tr>
@@ -196,66 +133,118 @@ export default function OperationsPage() {
           </div>
         </Card>
 
-        {/* Tasks */}
-        <Card className="p-4">
-          <div className="flex justify-between">
-            <div>
-              <div className="text-sm text-white/60">Checklist</div>
-              <div className="text-lg font-semibold">Tareas operativas</div>
+        {/* Tasks + Alerts */}
+        <div className="space-y-4">
+          {/* Tasks */}
+          <Card className="card-pad">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm muted">Checklist</div>
+                <div className="text-lg font-semibold">Tareas operativas</div>
+              </div>
+              <div className="text-xs muted-2">
+                {doneCount}/{tasks.length} completadas
+              </div>
             </div>
-            <div className="text-xs text-white/50">{doneCount}/{tasks.length}</div>
-          </div>
 
-          <div className="mt-4 space-y-3">
-            {tasks.map(t => (
-              <label key={t.id} className="flex gap-3 p-3 border border-white/10 rounded-xl cursor-pointer">
-                <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} />
-                <div>
-                  <div className={`${t.done ? "line-through text-white/50" : ""}`}>
-                    {t.title}
+            <div className="mt-4 space-y-3">
+              {tasks.map((t) => (
+                <label
+                  key={t.id}
+                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-black/20 p-3 hover:bg-white/5"
+                >
+                  <input
+                    type="checkbox"
+                    checked={t.done}
+                    onChange={() => toggleTask(t.id)}
+                    className="mt-1 h-4 w-4 accent-white"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className={[
+                        "text-sm font-medium",
+                        t.done ? "line-through text-white/50" : "text-white/90",
+                      ].join(" ")}
+                    >
+                      {t.title}
+                    </div>
+                    <div className="text-xs muted-2">{t.area}</div>
                   </div>
-                  <div className="text-xs text-white/50">{t.area}</div>
-                </div>
-              </label>
-            ))}
-          </div>
-        </Card>
+                </label>
+              ))}
+            </div>
+
+            <button type="button" className="btn btn-primary mt-4 w-full">
+              + Agregar tarea
+            </button>
+          </Card>
+
+          {/* Alerts */}
+          <Card className="card-pad">
+            <div className="text-sm muted">Alertas</div>
+            <div className="mt-1 text-lg font-semibold">Atención inmediata</div>
+
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                <div className="text-sm font-medium">Línea C bloqueada</div>
+                <div className="text-xs muted-2">Falla de motor · hace 20 min</div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                <div className="text-sm font-medium">Stock crítico: Placas metálicas</div>
+                <div className="text-xs muted-2">Inventarios · hoy</div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                <div className="text-sm font-medium">Inspección de seguridad pendiente</div>
+                <div className="text-xs muted-2">Planta 2 · hoy</div>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
-
-      {/* Modal Nueva Orden */}
-      <Modal open={open} title="Nueva orden / ticket" onClose={() => setOpen(false)}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <select {...form.register("type")} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-            <option value="Orden">Orden</option>
-            <option value="Ticket">Ticket</option>
-          </select>
-
-          <input {...form.register("line")} placeholder="Área / Línea"
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2" />
-
-          <select {...form.register("priority")}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-            <option value="Alta">Alta</option>
-            <option value="Media">Media</option>
-            <option value="Baja">Baja</option>
-          </select>
-
-          <input {...form.register("eta")} placeholder="ETA (ej: 3h)"
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2" />
-
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => setOpen(false)}
-              className="px-4 py-2 border border-white/10 rounded-xl">
-              Cancelar
-            </button>
-            <button type="submit"
-              className="px-4 py-2 bg-white/10 rounded-xl">
-              Crear
-            </button>
-          </div>
-        </form>
-      </Modal>
-
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+{/* 
+
+Implementé el módulo de Operaciones para visualizar el estado operativo del sistema y facilitar el seguimiento de órdenes, tickets y tareas del día.
+
+ Qué incluye
+- KPIs operativos (producción, eficiencia, órdenes abiertas e incidentes).
+- Tabla de Órdenes & Tickets** con:
+  - ID, tipo, área, estado, ETA y prioridad.
+- Checklist de tareas operativas** con:
+  - conteo de completadas
+  - toggle de estado (done / pendiente)
+- Alertas con eventos que requieren atención inmediata.
+
+ Estructura del código
+- `OperationsPage.tsx`
+  - Usa `useState` para manejar checklist local.
+  - Usa `useMemo` para calcular tareas completadas.
+  - Renderiza badges por estado y colores por prioridad.
+
+ Estilos
+Se utilizan clases globales definidas en `src/index.css`:
+- `page`, `card-pad`, `card-header`
+- `btn`, `btn-primary`
+- `table`, `th`, `td`, `tr`
+- `badge` (variantes para estados)
+
+Integración backend sugerida
+Endpoints recomendados:
+
+- GET /operations/kpis
+- GET /operations/orders
+- GET /operations/tasks
+- GET /operations/alerts
+
+La UI puede reemplazar los mocks sin modificar el layout. */}

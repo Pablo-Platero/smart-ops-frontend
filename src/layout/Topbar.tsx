@@ -50,14 +50,6 @@ export default function Topbar() {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur md:flex">
-          <Search size={16} className="text-white/60" />
-          <input
-            placeholder="Buscar…"
-            className="w-56 bg-transparent text-sm outline-none placeholder:text-white/40"
-          />
-        </div>
-
         <button
           type="button"
           className="rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10"

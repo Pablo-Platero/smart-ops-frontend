@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import Card from "../components/ui/Card";
+import Modal from "../components/ui/Modal";
 
 type Role =
   | "Admin"
@@ -32,7 +33,7 @@ const ROLES: Array<"Todos" | Role> = [
 
 const STATUS_LIST: Array<"Todos" | EmployeeStatus> = ["Todos", "Activo", "Inactivo"];
 
-const EMPLOYEES: Employee[] = [
+const EMPLOYEES_SEED: Employee[] = [
   { id: "EMP-001", name: "Alex Morgan", role: "Admin", department: "Sistemas", status: "Activo", email: "alex@gmail.com" },
   { id: "EMP-002", name: "María López", role: "Finanzas", department: "Finanzas", status: "Activo", email: "maria@gmail.com" },
   { id: "EMP-003", name: "Carlos Gómez", role: "Logística", department: "Inventarios", status: "Activo", email: "carlos@gmail.com" },
@@ -46,15 +47,7 @@ function badgeClass(status: EmployeeStatus) {
   return "badge border-white/10 bg-white/5 text-white/70";
 }
 
-function Stat({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string | number;
-  note: string;
-}) {
+function Stat({ label, value, note }: { label: string; value: string | number; note: string }) {
   return (
     <Card className="card-pad">
       <div className="text-sm muted">{label}</div>
@@ -65,14 +58,31 @@ function Stat({
 }
 
 export default function HRPage() {
+  // Data state (demo-ready)
+  const [employees, setEmployees] = useState<Employee[]>(EMPLOYEES_SEED);
+
+  // Filters
   const [q, setQ] = useState<string>("");
   const [role, setRole] = useState<(typeof ROLES)[number]>("Todos");
   const [status, setStatus] = useState<(typeof STATUS_LIST)[number]>("Todos");
 
+  // Modal
+  const [open, setOpen] = useState(false);
+
+  // Form state (simple + minimal)
+  const [form, setForm] = useState<Employee>({
+    id: "",
+    name: "",
+    role: "Admin",
+    department: "",
+    status: "Activo",
+    email: "",
+  });
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
 
-    return EMPLOYEES.filter((e) => {
+    return employees.filter((e) => {
       const byQ =
         term.length === 0 ||
         e.id.toLowerCase().includes(term) ||
@@ -84,7 +94,7 @@ export default function HRPage() {
 
       return byQ && byRole && byStatus;
     });
-  }, [q, role, status]);
+  }, [employees, q, role, status]);
 
   const kpis = useMemo(() => {
     const total = filtered.length;
@@ -93,9 +103,27 @@ export default function HRPage() {
     return { total, active, inactive };
   }, [filtered]);
 
+  function resetForm() {
+    setForm({ id: "", name: "", role: "Admin", department: "", status: "Activo", email: "" });
+  }
+
+  function openModal() {
+    resetForm();
+    setOpen(true);
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    // Minimal validation
+    if (!form.id.trim() || !form.name.trim() || !form.email.trim()) return;
+
+    setEmployees((prev) => [{ ...form }, ...prev]);
+    setOpen(false);
+  }
+
   return (
     <div className="page">
-      {/* Filters */}
       <Card className="card-pad">
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           <input
@@ -105,11 +133,7 @@ export default function HRPage() {
             className="input lg:col-span-2"
           />
 
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as (typeof ROLES)[number])}
-            className="select"
-          >
+          <select value={role} onChange={(e) => setRole(e.target.value as any)} className="select">
             {ROLES.map((r) => (
               <option key={r} value={r} className="bg-[#0B1220]">
                 {r}
@@ -117,11 +141,7 @@ export default function HRPage() {
             ))}
           </select>
 
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as (typeof STATUS_LIST)[number])}
-            className="select"
-          >
+          <select value={status} onChange={(e) => setStatus(e.target.value as any)} className="select">
             {STATUS_LIST.map((s) => (
               <option key={s} value={s} className="bg-[#0B1220]">
                 {s}
@@ -129,20 +149,18 @@ export default function HRPage() {
             ))}
           </select>
 
-          <button type="button" className="btn btn-primary">
+          <button type="button" className="btn btn-primary" onClick={openModal}>
             + Nuevo empleado
           </button>
         </div>
       </Card>
 
-      {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Stat label="Total" value={kpis.total} note="Filtrados" />
         <Stat label="Activos" value={kpis.active} note="En el sistema" />
         <Stat label="Inactivos" value={kpis.inactive} note="Archivados" />
       </div>
 
-      {/* Table */}
       <Card className="p-0 overflow-hidden">
         <div className="card-header">
           <div>
@@ -180,9 +198,15 @@ export default function HRPage() {
                   </td>
                   <td className="td">{e.email}</td>
                   <td className="td text-right">
-                    <button type="button" className="btn btn-ghost px-3 py-1 text-xs">
-                      Ver
-                    </button>
+                   <button className="rounded-lg border border-white/10 px-3 py-1 text-xs hover:bg-white/10">
+                    Ver
+                  </button>
+
+              <button
+               className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs text-red-200 hover:bg-red-500/15"
+                 >
+               Eliminar
+            </button>
                   </td>
                 </tr>
               ))}
@@ -198,6 +222,69 @@ export default function HRPage() {
           </table>
         </div>
       </Card>
+
+      <Modal
+        open={open}
+        title="Nuevo empleado"
+        onClose={() => setOpen(false)}
+        footer={
+          <>
+            <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
+              Cancelar
+            </button>
+            <button type="submit" form="hr-form" className="btn btn-primary">
+              Guardar
+            </button>
+          </>
+        }
+      >
+        <form id="hr-form" onSubmit={onSubmit} className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <div className="text-sm muted mb-1">ID</div>
+              <input className="input" value={form.id} onChange={(e) => setForm((p) => ({ ...p, id: e.target.value }))} placeholder="EMP-007" />
+            </div>
+
+            <div>
+              <div className="text-sm muted mb-1">Estado</div>
+              <select className="select" value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as EmployeeStatus }))}>
+                <option className="bg-[#0B1220]" value="Activo">Activo</option>
+                <option className="bg-[#0B1220]" value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <div className="text-sm muted mb-1">Nombre</div>
+              <input className="input" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Nombre completo" />
+            </div>
+
+            <div>
+              <div className="text-sm muted mb-1">Rol</div>
+              <select className="select" value={form.role} onChange={(e) => setForm((p) => ({ ...p, role: e.target.value as Role }))}>
+                {ROLES.filter((r) => r !== "Todos").map((r) => (
+                  <option key={r} className="bg-[#0B1220]" value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <div className="text-sm muted mb-1">Departamento</div>
+              <input className="input" value={form.department} onChange={(e) => setForm((p) => ({ ...p, department: e.target.value }))} placeholder="Ej: Finanzas" />
+            </div>
+
+            <div className="sm:col-span-2">
+              <div className="text-sm muted mb-1">Email</div>
+              <input className="input" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="correo@empresa.com" />
+            </div>
+          </div>
+
+          <div className="text-xs text-white/40">
+            *Campos mínimos para demo. El backend puede extender el modelo sin cambiar el layout del modal.
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

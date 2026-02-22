@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import Card from "../components/ui/Card";
+import Modal from "../components/ui/Modal";
 
 type Priority = "Alta" | "Media" | "Baja";
 type OrderStatus = "En curso" | "Pendiente" | "Bloqueado" | "Resuelto";
@@ -28,7 +29,7 @@ const TASKS_SEED: Task[] = [
   { id: 4, title: "Inspección de seguridad (EPP)", area: "Planta 2", done: false },
 ];
 
-const ORDERS: Order[] = [
+const ORDERS_SEED: Order[] = [
   { id: "OP-1201", type: "Orden", line: "Línea A", status: "En curso", eta: "2h", priority: "Alta" },
   { id: "OP-1202", type: "Ticket", line: "Línea B", status: "Pendiente", eta: "6h", priority: "Media" },
   { id: "OP-1203", type: "Orden", line: "Línea C", status: "Bloqueado", eta: "—", priority: "Alta" },
@@ -48,15 +49,15 @@ function priorityClass(p: Priority) {
   return "text-white/70";
 }
 
-function Stat({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string | number;
-  note: string;
-}) {
+function nextOpId(existing: Order[]) {
+  const nums = existing
+    .map((o) => Number(o.id.replace("OP-", "")))
+    .filter((n) => Number.isFinite(n));
+  const next = (nums.length ? Math.max(...nums) : 1200) + 1;
+  return `OP-${next}`;
+}
+
+function Stat({ label, value, note }: { label: string; value: string | number; note: string }) {
   return (
     <Card className="card-pad">
       <div className="text-sm muted">{label}</div>
@@ -68,11 +69,47 @@ function Stat({
 
 export default function OperationsPage() {
   const [tasks, setTasks] = useState<Task[]>(TASKS_SEED);
+  const [orders, setOrders] = useState<Order[]>(ORDERS_SEED);
+
+  // modal
+  const [open, setOpen] = useState(false);
+
+  // form
+  const [form, setForm] = useState<Omit<Order, "id">>({
+    type: "Orden",
+    line: "Planta 1",
+    status: "Pendiente",
+    eta: "—",
+    priority: "Media",
+  });
 
   const doneCount = useMemo(() => tasks.filter((t) => t.done).length, [tasks]);
 
   function toggleTask(id: number) {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+  }
+
+  function resetForm() {
+    setForm({
+      type: "Orden",
+      line: "Planta 1",
+      status: "Pendiente",
+      eta: "—",
+      priority: "Media",
+    });
+  }
+
+  function openModal() {
+    resetForm();
+    setOpen(true);
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.line.trim()) return;
+
+    setOrders((prev) => [{ id: nextOpId(prev), ...form }, ...prev]);
+    setOpen(false);
   }
 
   return (
@@ -81,8 +118,8 @@ export default function OperationsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Stat label="Producción hoy" value="1,240 uds" note="Objetivo: 1,500" />
         <Stat label="Eficiencia" value="82%" note="Últimas 24h" />
-        <Stat label="Órdenes abiertas" value="3" note="En curso / pendientes" />
-        <Stat label="Incidentes" value="1" note="Requiere atención" />
+        <Stat label="Órdenes abiertas" value={orders.filter((o) => o.status !== "Resuelto").length} note="En curso / pendientes" />
+        <Stat label="Incidentes" value={orders.filter((o) => o.status === "Bloqueado").length} note="Requiere atención" />
       </div>
 
       {/* Main grid */}
@@ -95,7 +132,7 @@ export default function OperationsPage() {
               <div className="text-lg font-semibold">Órdenes & Tickets</div>
             </div>
 
-            <button type="button" className="btn btn-primary">
+            <button type="button" className="btn btn-primary" onClick={openModal}>
               + Crear
             </button>
           </div>
@@ -114,7 +151,7 @@ export default function OperationsPage() {
               </thead>
 
               <tbody>
-                {ORDERS.map((o) => (
+                {orders.map((o) => (
                   <tr key={o.id} className="tr">
                     <td className="td-strong">{o.id}</td>
                     <td className="td">{o.type}</td>
@@ -160,12 +197,7 @@ export default function OperationsPage() {
                     className="mt-1 h-4 w-4 accent-white"
                   />
                   <div className="min-w-0 flex-1">
-                    <div
-                      className={[
-                        "text-sm font-medium",
-                        t.done ? "line-through text-white/50" : "text-white/90",
-                      ].join(" ")}
-                    >
+                    <div className={["text-sm font-medium", t.done ? "line-through text-white/50" : "text-white/90"].join(" ")}>
                       {t.title}
                     </div>
                     <div className="text-xs muted-2">{t.area}</div>
@@ -201,12 +233,97 @@ export default function OperationsPage() {
           </Card>
         </div>
       </div>
+
+      {/* Modal */}
+      <Modal
+        open={open}
+        title="Crear orden / ticket"
+        onClose={() => setOpen(false)}
+        footer={
+          <>
+            <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
+              Cancelar
+            </button>
+            <button type="submit" form="op-form" className="btn btn-primary">
+              Guardar
+            </button>
+          </>
+        }
+      >
+        <form id="op-form" onSubmit={onSubmit} className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <div className="text-sm muted mb-1">Tipo</div>
+              <select
+                className="select"
+                value={form.type}
+                onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as OrderType }))}
+              >
+                <option className="bg-[#0B1220]" value="Orden">Orden</option>
+                <option className="bg-[#0B1220]" value="Ticket">Ticket</option>
+              </select>
+            </div>
+
+            <div>
+              <div className="text-sm muted mb-1">Estado</div>
+              <select
+                className="select"
+                value={form.status}
+                onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as OrderStatus }))}
+              >
+                <option className="bg-[#0B1220]" value="Pendiente">Pendiente</option>
+                <option className="bg-[#0B1220]" value="En curso">En curso</option>
+                <option className="bg-[#0B1220]" value="Bloqueado">Bloqueado</option>
+                <option className="bg-[#0B1220]" value="Resuelto">Resuelto</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <div className="text-sm muted mb-1">Área / Línea</div>
+              <input
+                className="input"
+                value={form.line}
+                onChange={(e) => setForm((p) => ({ ...p, line: e.target.value }))}
+                placeholder="Ej: Línea A / Planta 1 / Bodega Central"
+              />
+            </div>
+
+            <div>
+              <div className="text-sm muted mb-1">ETA</div>
+              <input
+                className="input"
+                value={form.eta}
+                onChange={(e) => setForm((p) => ({ ...p, eta: e.target.value }))}
+                placeholder="Ej: 2h / 1d / —"
+              />
+            </div>
+
+            <div>
+              <div className="text-sm muted mb-1">Prioridad</div>
+              <select
+                className="select"
+                value={form.priority}
+                onChange={(e) => setForm((p) => ({ ...p, priority: e.target.value as Priority }))}
+              >
+                <option className="bg-[#0B1220]" value="Alta">Alta</option>
+                <option className="bg-[#0B1220]" value="Media">Media</option>
+                <option className="bg-[#0B1220]" value="Baja">Baja</option>
+              </select>
+            </div>
+
+          </div>
+
+           
+          
+
+          <div className="text-xs text-white/40">
+            *Modelo mínimo para demo. El backend puede agregar asignado, descripción, timestamps, etc.
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
-
-
-
 
 
 

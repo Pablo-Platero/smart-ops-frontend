@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import Card from "../components/ui/Card";
+import Modal from "../components/ui/Modal";
 
 type CrmType = "Empresa" | "Persona";
 type CrmStatus = "Activo" | "Prospecto" | "Inactivo";
@@ -17,61 +18,13 @@ type CrmRecord = {
 const TYPES: Array<"Todos" | CrmType> = ["Todos", "Empresa", "Persona"];
 const STATUS: Array<"Todos" | CrmStatus> = ["Todos", "Activo", "Prospecto", "Inactivo"];
 
-const RECORDS: CrmRecord[] = [
-  {
-    id: "CRM-001",
-    type: "Empresa",
-    name: "TechCorp",
-    owner: "Ventas",
-    status: "Activo",
-    email: "contact@techcorp.com",
-    phone: "+506 8888-1111",
-  },
-  {
-    id: "CRM-002",
-    type: "Empresa",
-    name: "Municipalidad de Upala",
-    owner: "Ventas",
-    status: "Prospecto",
-    email: "info@upala.go.cr",
-    phone: "+506 2460-0000",
-  },
-  {
-    id: "CRM-003",
-    type: "Persona",
-    name: "María López",
-    owner: "CRM",
-    status: "Activo",
-    email: "maria.lopez@email.com",
-    phone: "+506 8888-2222",
-  },
-  {
-    id: "CRM-004",
-    type: "Persona",
-    name: "Carlos Gómez",
-    owner: "CRM",
-    status: "Inactivo",
-    email: "carlos.g@email.com",
-    phone: "+506 8888-3333",
-  },
-  {
-    id: "CRM-005",
-    type: "Empresa",
-    name: "Constructora Norte",
-    owner: "Ventas",
-    status: "Activo",
-    email: "ventas@constructora.com",
-    phone: "+506 8888-4444",
-  },
-  {
-    id: "CRM-006",
-    type: "Empresa",
-    name: "Servicios del Pacífico",
-    owner: "Operaciones",
-    status: "Prospecto",
-    email: "hello@pacifico.com",
-    phone: "+506 8888-5555",
-  },
+const RECORDS_SEED: CrmRecord[] = [
+  { id: "CRM-001", type: "Empresa", name: "TechCorp", owner: "Ventas", status: "Activo", email: "contact@techcorp.com", phone: "+506 8888-1111" },
+  { id: "CRM-002", type: "Empresa", name: "Municipalidad de Upala", owner: "Ventas", status: "Prospecto", email: "info@upala.go.cr", phone: "+506 2460-0000" },
+  { id: "CRM-003", type: "Persona", name: "María López", owner: "CRM", status: "Activo", email: "maria.lopez@email.com", phone: "+506 8888-2222" },
+  { id: "CRM-004", type: "Persona", name: "Carlos Gómez", owner: "CRM", status: "Inactivo", email: "carlos.g@email.com", phone: "+506 8888-3333" },
+  { id: "CRM-005", type: "Empresa", name: "Constructora Norte", owner: "Ventas", status: "Activo", email: "ventas@constructora.com", phone: "+506 8888-4444" },
+  { id: "CRM-006", type: "Empresa", name: "Servicios del Pacífico", owner: "Operaciones", status: "Prospecto", email: "hello@pacifico.com", phone: "+506 8888-5555" },
 ];
 
 function badgeClass(status: CrmStatus) {
@@ -80,15 +33,7 @@ function badgeClass(status: CrmStatus) {
   return "badge border-white/10 bg-white/5 text-white/70";
 }
 
-function Stat({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: string | number;
-  note: string;
-}) {
+function Stat({ label, value, note }: { label: string; value: string | number; note: string }) {
   return (
     <Card className="card-pad">
       <div className="text-sm muted">{label}</div>
@@ -98,15 +43,40 @@ function Stat({
   );
 }
 
+function nextCrmId(existing: CrmRecord[]) {
+  const nums = existing
+    .map((r) => Number(r.id.replace("CRM-", "")))
+    .filter((n) => Number.isFinite(n));
+  const next = (nums.length ? Math.max(...nums) : 0) + 1;
+  return `CRM-${String(next).padStart(3, "0")}`;
+}
+
 export default function CRMPage() {
+  // data
+  const [records, setRecords] = useState<CrmRecord[]>(RECORDS_SEED);
+
+  // filters
   const [q, setQ] = useState<string>("");
   const [type, setType] = useState<(typeof TYPES)[number]>("Todos");
   const [status, setStatus] = useState<(typeof STATUS)[number]>("Todos");
 
+  // modal
+  const [open, setOpen] = useState(false);
+
+  // form (minimal)
+  const [form, setForm] = useState<Omit<CrmRecord, "id">>({
+    type: "Empresa",
+    name: "",
+    owner: "Ventas",
+    status: "Prospecto",
+    email: "",
+    phone: "",
+  });
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
 
-    return RECORDS.filter((r) => {
+    return records.filter((r) => {
       const byQ =
         term.length === 0 ||
         r.id.toLowerCase().includes(term) ||
@@ -119,7 +89,7 @@ export default function CRMPage() {
 
       return byQ && byType && byStatus;
     });
-  }, [q, type, status]);
+  }, [records, q, type, status]);
 
   const kpis = useMemo(() => {
     const total = filtered.length;
@@ -128,6 +98,32 @@ export default function CRMPage() {
     const prospects = filtered.filter((r) => r.status === "Prospecto").length;
     return { total, companies, people, prospects };
   }, [filtered]);
+
+  function resetForm() {
+    setForm({
+      type: "Empresa",
+      name: "",
+      owner: "Ventas",
+      status: "Prospecto",
+      email: "",
+      phone: "",
+    });
+  }
+
+  function openModal() {
+    resetForm();
+    setOpen(true);
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    // minimal required fields
+    if (!form.name.trim() || !form.email.trim()) return;
+
+    setRecords((prev) => [{ id: nextCrmId(prev), ...form }, ...prev]);
+    setOpen(false);
+  }
 
   return (
     <div className="page">
@@ -165,7 +161,7 @@ export default function CRMPage() {
             ))}
           </select>
 
-          <button type="button" className="btn btn-primary">
+          <button type="button" className="btn btn-primary" onClick={openModal}>
             + Nuevo registro
           </button>
 
@@ -220,9 +216,17 @@ export default function CRMPage() {
                   <td className="td">{r.email}</td>
                   <td className="td">{r.phone}</td>
                   <td className="td text-right">
-                    <button type="button" className="btn btn-ghost px-3 py-1 text-xs">
-                      Ver
-                    </button>
+                    <button className="rounded-lg border border-white/10 px-3 py-1 text-xs hover:bg-white/10">
+                    Ver
+                   </button>
+                   
+
+              <button
+               className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs text-red-200 hover:bg-red-500/15"
+                  onClick={() => setRecords((prev) => prev.filter((x) => x.id !== r.id))}
+               >
+                 Eliminar
+                </button>
                   </td>
                 </tr>
               ))}
@@ -238,10 +242,99 @@ export default function CRMPage() {
           </table>
         </div>
       </Card>
+
+      {/* Modal */}
+      <Modal
+        open={open}
+        title="Nuevo registro CRM"
+        onClose={() => setOpen(false)}
+        footer={
+          <>
+            <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>
+              Cancelar
+            </button>
+            <button type="submit" form="crm-form" className="btn btn-primary">
+              Guardar
+            </button>
+          </>
+        }
+      >
+        <form id="crm-form" onSubmit={onSubmit} className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <div className="text-sm muted mb-1">Tipo</div>
+              <select
+                className="select"
+                value={form.type}
+                onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as CrmType }))}
+              >
+                <option className="bg-[#0B1220]" value="Empresa">Empresa</option>
+                <option className="bg-[#0B1220]" value="Persona">Persona</option>
+              </select>
+            </div>
+
+            <div>
+              <div className="text-sm muted mb-1">Estado</div>
+              <select
+                className="select"
+                value={form.status}
+                onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as CrmStatus }))}
+              >
+                <option className="bg-[#0B1220]" value="Prospecto">Prospecto</option>
+                <option className="bg-[#0B1220]" value="Activo">Activo</option>
+                <option className="bg-[#0B1220]" value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <div className="text-sm muted mb-1">Nombre</div>
+              <input
+                className="input"
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                placeholder="Nombre de empresa o persona"
+              />
+            </div>
+
+            <div>
+              <div className="text-sm muted mb-1">Owner</div>
+              <input
+                className="input"
+                value={form.owner}
+                onChange={(e) => setForm((p) => ({ ...p, owner: e.target.value }))}
+                placeholder="Ej: Ventas"
+              />
+            </div>
+
+            <div>
+              <div className="text-sm muted mb-1">Teléfono</div>
+              <input
+                className="input"
+                value={form.phone}
+                onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                placeholder="+506 8888-0000"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <div className="text-sm muted mb-1">Email</div>
+              <input
+                className="input"
+                value={form.email}
+                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                placeholder="correo@empresa.com"
+              />
+            </div>
+          </div>
+
+          <div className="text-xs text-white/40">
+            *Campos mínimos para demo. El backend puede agregar campos (dirección, industria, pipeline, etc.) sin cambiar el layout.
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
-
 
 
 

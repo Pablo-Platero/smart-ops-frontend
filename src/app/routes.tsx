@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import AppLayout from "../layout/AppLayout";
+import LoginPage from "../pages/LoginPage";
 
 import DashboardPage from "../pages/DashboardPage";
 import InventoriesPage from "../pages/InventoriesPage";
@@ -8,7 +9,19 @@ import HRPage from "../pages/HRPage";
 import CRMPage from "../pages/CRMPage";
 import OperationsPage from "../pages/OperationsPage";
 
+
 export const router = createBrowserRouter([
+
+   {
+    path: "/login",
+    element: <LoginPage />,
+  },
+
+  //Redirección inicial
+  {
+    path: "/",
+    element: <Navigate to="/login" replace />,
+  },
   {
     element: <AppLayout />,
     children: [
